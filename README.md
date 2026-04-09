@@ -18,13 +18,6 @@ make        # builds libc.a
 make clean  # removes build artifacts
 ```
 
-## Usage as submodule
-
-```
-git submodule add https://github.com/qwaer80792/cactlib.git Lux/libc
-git submodule update --init
-```
-
 ## License
 
 GPLv3
