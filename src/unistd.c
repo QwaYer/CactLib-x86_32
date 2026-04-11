@@ -37,10 +37,7 @@ off_t lseek(int fd, off_t offset, int whence) {
 
 pid_t waitpid(pid_t pid, int *status, int options) {
     (void)options;
-    pid_t ret;
-    while ((ret = (pid_t)syscall(SYS_WAITPID, pid, (int)status, 0)) == -2)
-        ;
-    return ret;
+    return (pid_t)syscall(SYS_WAITPID, pid, (int)status, 0);
 }
 
 unsigned int sleep(unsigned int seconds) {
