@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "time.h"
+#include "unistd.h"
 
 typedef uint32_t sigset_t;
 
@@ -51,11 +52,21 @@ struct itimerval {
     struct timeval it_value;    /* time until next expiry      */
 };
 
+typedef void (*sighandler_t)(int);
+
+#define SIG_DFL ((sighandler_t)0)
+#define SIG_IGN ((sighandler_t)1)
+
+#define WNOHANG 1
+
 int          sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 int          sigpending(sigset_t *set);
 int          sigsuspend(const sigset_t *mask);
 unsigned int alarm(unsigned int seconds);
 int          setitimer(int which, const struct itimerval *new_value,
                        struct itimerval *old_value);
+
+sighandler_t signal(int signum, sighandler_t handler);
+int          kill(pid_t pid, int sig);
 
 #endif /* _SIGNAL_H */

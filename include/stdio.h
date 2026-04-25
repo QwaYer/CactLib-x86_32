@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+void kprint(const char *s);
 int printf(const char* format, ...);
 int puts(const char* str);
 int putchar(int c);
