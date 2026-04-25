@@ -11,8 +11,6 @@ void kprint(const char *s) {
 }
 
 int putchar(int c) {
-    char buf[2] = {(char)c, 0};
-    syscall(SYS_PRINT, (int)buf, 0, 0);
     char buf = (char)c;
     write(STDOUT_FILENO, &buf, 1);
     return c;
