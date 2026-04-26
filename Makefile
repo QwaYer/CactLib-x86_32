@@ -1,7 +1,9 @@
 CC = gcc
 AS = gcc
 AR = ar
-CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -Iinclude -Wall -Wextra
+VERSION := $(shell cat VERSION)
+CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -Iinclude -Wall -Wextra \
+         -DCACTLIB_VERSION=\"$(VERSION)\"
 ASFLAGS = -m32 -ffreestanding -fno-pie -nostdlib
 
 SRC_DIR = src
@@ -32,4 +34,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-.PHONY: all clean
+version:
+	@echo "CactLib version: $(VERSION)"
+
+.PHONY: all clean version
