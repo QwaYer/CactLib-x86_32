@@ -96,7 +96,30 @@ int dup2(int oldfd, int newfd) {
     return syscall(SYS_DUP2, oldfd, newfd, 0);
 }
 
-/* select: pack 5 args into a struct, pass pointer in ebx */
+uid_t getuid(void) {
+    return (uid_t)__syscall0(SYS_GETUID);
+}
+
+uid_t geteuid(void) {
+    return (uid_t)__syscall0(SYS_GETEUID);
+}
+
+gid_t getgid(void) {
+    return (gid_t)__syscall0(SYS_GETGID);
+}
+
+gid_t getegid(void) {
+    return (gid_t)__syscall0(SYS_GETEGID);
+}
+
+int setuid(uid_t uid) {
+    return __syscall1(SYS_SETUID, (int)uid);
+}
+
+int setgid(gid_t gid) {
+    return __syscall1(SYS_SETGID, (int)gid);
+}
+
 int select(int nfds, fd_set *readfds, fd_set *writefds,
            fd_set *exceptfds, struct timeval *timeout) {
     select_args_t args;
@@ -108,7 +131,6 @@ int select(int nfds, fd_set *readfds, fd_set *writefds,
     return __syscall1(SYS_SELECT, (int)&args);
 }
 
-/* poll: 3 args fit directly in ebx/ecx/edx */
 int poll(struct pollfd *fds, int nfds, int timeout_ms) {
     return __syscall3(SYS_POLL, (int)fds, nfds, timeout_ms);
 }

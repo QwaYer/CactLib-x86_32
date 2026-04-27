@@ -6,6 +6,8 @@
 typedef int pid_t;
 typedef int ssize_t;
 typedef int off_t;
+typedef unsigned int uid_t;
+typedef unsigned int gid_t;
 
 #define STDIN_FILENO  0
 #define STDOUT_FILENO 1
@@ -35,5 +37,11 @@ int mkdir(const char *pathname, int mode);
 int rmdir(const char *pathname);
 int pipe(int pipefd[2]);
 int dup2(int oldfd, int newfd);
+uid_t getuid(void);
+uid_t geteuid(void);
+gid_t getgid(void);
+gid_t getegid(void);
+int setuid(uid_t uid);
+int setgid(gid_t gid);
 
 #endif
