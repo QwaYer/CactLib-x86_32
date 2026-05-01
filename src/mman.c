@@ -1,5 +1,6 @@
 #include "sys/mman.h"
 #include "syscall.h"
+#include <stdint.h>
 
 /* mmap argument structure — must match kernel's mmap_args_t */
 typedef struct {
@@ -20,18 +21,18 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, unsigned int 
     args.flags  = flags;
     args.fd     = fd;
     args.offset = offset;
-    int ret = __syscall1(SYS_MMAP, (int)&args);
-    if (ret < 0)
+    intptr_t ret = syscall(SYS_MMAP, (uintptr_t)&args, 0, 0);
+    if (ret == -1)
         return MAP_FAILED;
-    return (void *)ret;
+    return (void *)(uintptr_t)ret;
 }
 
 int munmap(void *addr, size_t length)
 {
-    return __syscall2(SYS_MUNMAP, (int)addr, (int)length);
+    return (int)syscall(SYS_MUNMAP, (uintptr_t)addr, (uintptr_t)length, 0);
 }
 
 int mprotect(void *addr, size_t length, int prot)
 {
-    return __syscall3(SYS_MPROTECT, (int)addr, (int)length, prot);
+    return (int)syscall(SYS_MPROTECT, (uintptr_t)addr, (uintptr_t)length, (uintptr_t)prot);
 }

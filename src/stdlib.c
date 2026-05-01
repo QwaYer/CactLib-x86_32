@@ -1,6 +1,7 @@
 #include "stdlib.h"
 #include "syscall.h"
 #include "string.h"
+#include <stdint.h>
 
 void exit(int status) {
     syscall(SYS_EXIT, status, 0, 0);
@@ -43,13 +44,15 @@ static struct block_header *request_space(unsigned int size) {
     unsigned int request = total;
     if (request < 4096) request = 4096;
 
-    void *ptr = (void*)syscall(SYS_BRK, 0, 0, 0);
-    if ((int)ptr < 0) return 0;
+    uintptr_t cur_brk = (uintptr_t)syscall(SYS_BRK, 0, 0, 0);
+    if (cur_brk == UINTPTR_MAX) return 0;
 
-    int new_brk = syscall(SYS_BRK, (int)ptr + (int)request, 0, 0);
-    if (new_brk < 0) return 0;
+    uintptr_t req_brk = cur_brk + (uintptr_t)request;
+    if (req_brk < cur_brk) return 0;
+    uintptr_t new_brk = (uintptr_t)syscall(SYS_BRK, req_brk, 0, 0);
+    if (new_brk == UINTPTR_MAX) return 0;
 
-    struct block_header *block = (struct block_header *)ptr;
+    struct block_header *block = (struct block_header *)cur_brk;
     block->magic   = BLOCK_MAGIC;
     block->size    = request - BLOCK_SIZE;
     block->is_free = 0;

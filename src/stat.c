@@ -1,18 +1,19 @@
 #include "stat.h"
 #include "syscall.h"
+#include <stdint.h>
 
 int stat(const char *path, struct stat *buf) {
-    return syscall(SYS_STAT, (int)path, (int)buf, 0);
+    return (int)syscall(SYS_STAT, (uintptr_t)path, (uintptr_t)buf, 0);
 }
 
 int fstat(int fd, struct stat *buf) {
-    return syscall(SYS_FSTAT, fd, (int)buf, 0);
+    return (int)syscall(SYS_FSTAT, (uintptr_t)fd, (uintptr_t)buf, 0);
 }
 
 int chmod(const char *path, int mode) {
-    return __syscall2(SYS_CHMOD, (int)path, mode);
+    return (int)syscall(SYS_CHMOD, (uintptr_t)path, (uintptr_t)mode, 0);
 }
 
 int chown(const char *path, int uid, int gid) {
-    return __syscall3(SYS_CHOWN, (int)path, uid, gid);
+    return (int)syscall(SYS_CHOWN, (uintptr_t)path, (uintptr_t)uid, (uintptr_t)gid);
 }

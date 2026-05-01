@@ -1,6 +1,7 @@
 #ifndef _SYSCALL_H
 #define _SYSCALL_H
 
+#include <stdint.h>
 
 #define SYS_PRINT   0
 #define SYS_GETPID  1
@@ -81,10 +82,10 @@
 #define STDERR_FILENO 2
 
 
-int syscall(int num, int p1, int p2, int p3);
+intptr_t syscall(int num, uintptr_t p1, uintptr_t p2, uintptr_t p3);
 
-static inline int __syscall0(int num) {
-    int ret;
+static inline intptr_t __syscall0(int num) {
+    intptr_t ret;
     __asm__ volatile (
         "int $0x80"
         : "=a"(ret)
@@ -94,8 +95,8 @@ static inline int __syscall0(int num) {
     return ret;
 }
 
-static inline int __syscall1(int num, int a1) {
-    int ret;
+static inline intptr_t __syscall1(int num, uintptr_t a1) {
+    intptr_t ret;
     __asm__ volatile (
         "int $0x80"
         : "=a"(ret)
@@ -105,8 +106,8 @@ static inline int __syscall1(int num, int a1) {
     return ret;
 }
 
-static inline int __syscall2(int num, int a1, int a2) {
-    int ret;
+static inline intptr_t __syscall2(int num, uintptr_t a1, uintptr_t a2) {
+    intptr_t ret;
     __asm__ volatile (
         "int $0x80"
         : "=a"(ret)
@@ -116,8 +117,8 @@ static inline int __syscall2(int num, int a1, int a2) {
     return ret;
 }
 
-static inline int __syscall3(int num, int a1, int a2, int a3) {
-    int ret;
+static inline intptr_t __syscall3(int num, uintptr_t a1, uintptr_t a2, uintptr_t a3) {
+    intptr_t ret;
     __asm__ volatile (
         "int $0x80"
         : "=a"(ret)

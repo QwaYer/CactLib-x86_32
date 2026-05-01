@@ -4,10 +4,11 @@
 #include "stdlib.h"
 #include "unistd.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 
 void kprint(const char *s) {
-    syscall(SYS_PRINT, (int)s, 0, 0);
+    syscall(SYS_PRINT, (uintptr_t)s, 0, 0);
 }
 
 int putchar(int c) {
@@ -70,5 +71,5 @@ int printf(const char *format, ...) {
 }
 
 int rename(const char *oldpath, const char *newpath) {
-    return syscall(SYS_RENAME, (int)oldpath, (int)newpath, 0);
+    return (int)syscall(SYS_RENAME, (uintptr_t)oldpath, (uintptr_t)newpath, 0);
 }

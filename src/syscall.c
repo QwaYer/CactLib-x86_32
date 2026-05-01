@@ -1,7 +1,7 @@
 #include "syscall.h"
 
-int syscall(int num, int p1, int p2, int p3) {
-    int ret;
+intptr_t syscall(int num, uintptr_t p1, uintptr_t p2, uintptr_t p3) {
+    intptr_t ret;
     __asm__ volatile(
         "int $0x80"
         : "=a"(ret)
