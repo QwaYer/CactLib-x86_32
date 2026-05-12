@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  C standard library for <a href="https://github.com/QwaYer/CactOS-x86_32"><strong>CactOS</strong></a> userspace — freestanding, no host libc, pure <code>int 0x80</code> syscall interface.<br>
-  Пары с ядром: <a href="https://github.com/QwaYer/CactKernel-x86_32"><strong>CactKernel-x86_32</strong></a> · номера <code>SYS_*</code> в <a href="include/syscall.h"><code>include/syscall.h</code></a>.
+  A <strong>freestanding C library</strong> for <a href="https://github.com/QwaYer/CactOS-x86_32"><strong>CactOS</strong></a> user space on <strong>i686</strong>.<br>
+  No host libc — every OS entry goes through <code>int 0x80</code> with numbers from <a href="include/syscall.h"><code>include/syscall.h</code></a>, which must match <a href="https://github.com/QwaYer/CactKernel-x86_32"><strong>CactKernel-x86_32</strong></a> <code>syscalls.h</code>.
 </p>
 
 ---
@@ -21,169 +21,175 @@
 
 | | |
 |---|---|
-| **Исходники** | 15 `src/*.c` + `start.S` |
-| **Заголовки** | 18 файлов в `include/` (в т.ч. `sys/mman.h`) |
-| **Syscall IDs** | **95** (`SYS_SYSCALL_COUNT` — зеркало ядра) |
-| **Host dependencies** | 0 (только toolchain) |
-| **Output** | **`libc.a`** · **`libc.so`** · PIC-`start.o` |
+| **Sources** | 15 × `src/*.c` + `start.S` |
+| **Public headers** | 18 files under `include/` (including `sys/mman.h`) |
+| **Syscall IDs** | **95** — `SYS_SYSCALL_COUNT` mirrors the kernel enum |
+| **Runtime deps** | None (only the cross `gcc`/`ar`/`ld` toolchain) |
+| **Artifacts** | **`libc.a`** (static), **`libc.so`** (shared ET_DYN for PIE), **`build/pic/start.o`** (PIC `_start`) |
 
-> Часть экосистемы: **CactKernel** (ядро) · **CactLib** (libc) · **Cactsole** · **Cgoct** · **LocalRepoCactOS** (`cctkfs.img`)
+CactLib is the **contract surface** between user ELF binaries and the kernel. If you add or renumber a syscall in the kernel, you **must**:
+
+1. Update **`include/syscall.h`** here to match **`Cact/kernel/core/syscalls/syscalls.h`**.
+2. Rebuild **`libc.a`** / **`libc.so`** (`make`).
+3. **Re-link every user program** (init, shell, demos, drivers’ staged ELFs) against the new archive / shared object.
+
+**Ecosystem:** **CactKernel** · **CactLib** · **Cactsole** · **Cgoct** · **LocalRepoCactOS** (`cctkfs.img` packer).
 
 ---
 
 ## 🔨 Building
 
-**Requirements:** `gcc` с `-m32` (`gcc-multilib` на amd64), `binutils`, `make`
+**Requirements:** `gcc` with **`-m32`**, GNU **`binutils`**, **`make`**. On amd64 Debian/Ubuntu install **`gcc-multilib`** or an equivalent multilib toolchain.
 
 ```sh
 git clone https://github.com/QwaYer/CactLib-x86_32
 cd CactLib-x86_32
 
-# Build → libc.a + libc.so + build/pic/start.o
-make
-
-# Clean
-make clean
+make              # libc.a + libc.so + PIC objects under build/pic/
+make clean        # remove build/ trees and libraries
 ```
 
-**Compiler flags:**
+**Default `CFLAGS`** (see [`Makefile`](Makefile)):
 
 ```makefile
 CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
          -Iinclude -Wall -Wextra
 ```
 
-**Статическая линковка:**
+**Static link example**
 
 ```sh
 gcc -m32 -nostdlib -ffreestanding -o myprogram myprogram.o libc.a
 ```
 
-> ⚠️ Собирается **только под i686**. На x86_64 без `gcc-multilib` сборка не взлетит.
+**Shared / PIE note:** `libc.so` is built as **`ET_DYN`** with a fixed link script (`libc.ld`). PIE executables link against **`build/pic/start.o`** + relocatable `*.o` from `build/pic/`.
+
+> ⚠️ **i686 only.** Building `-m32` will fail on a pure 64-bit toolchain without multilib.
 
 ---
 
-## 📂 Structure
+## 📂 Layout
 
 ```
 CactLib-x86_32/
-├── src/                    ← implementation (.c + .S)
-│   ├── stdio.c             printf, puts, putchar, kprint, rename
-│   ├── stdlib.c            malloc, free, calloc, realloc, exit
-│   ├── string.c            memset, memcpy, strlen, strcmp, itoa…
-│   ├── unistd.c            read, write, fork, exec, pipe, select…
-│   ├── socket.c            socket, bind, connect, send, recv…
-│   ├── dns.c               dns_resolve → SYS_DNS_RESOLVE
-│   ├── signal.c            signal, kill, sigprocmask, alarm…
-│   ├── stat.c              stat, fstat
-│   ├── dirent.c            getdents
-│   ├── fcntl.c             open, fcntl, symlink, readlink…
-│   ├── mman.c              mmap, munmap, mprotect
-│   ├── shm.c               shmget, shmat, shmdt, shmctl
-│   ├── termios.c           tcgetattr, tcsetattr
-│   ├── time.c              gettimeofday, clock_gettime, nanosleep
-│   ├── syscall.c           raw syscall() trampoline
-│   └── start.S             _start (обычный + PIC)
+├── src/
+│   ├── stdio.c      printf family, puts, putchar, kprint (SYS_PRINT), rename
+│   ├── stdlib.c     malloc/brk heap, exit, atoi, itoa, …
+│   ├── string.c     memset, memcpy, strlen, strcmp, …
+│   ├── unistd.c     POSIX-like file + process + mount + module syscalls
+│   ├── socket.c     BSD sockets (stream/dgram)
+│   ├── dns.c        dns_resolve() → SYS_DNS_RESOLVE
+│   ├── signal.c     signals, masks, alarm, interval timers
+│   ├── stat.c       stat, fstat
+│   ├── dirent.c     getdents
+│   ├── fcntl.c      open variants, symlink, readlink, link, unlink, …
+│   ├── mman.c       mmap, munmap, mprotect
+│   ├── shm.c        SysV shared memory wrappers
+│   ├── termios.c    tcgetattr / tcsetattr
+│   ├── time.c       clocks + nanosleep
+│   ├── syscall.c    variadic syscall() helper
+│   └── start.S      user _start (non-PIC + PIC flavours)
 ├── include/
-│   ├── syscall.h           все SYS_* (должны совпадать с ядром!)
-│   ├── socket.h          сокеты + dns_resolve
+│   ├── syscall.h    authoritative SYS_* list — keep identical to the kernel!
+│   ├── socket.h     sockaddr_in helpers + dns_resolve
 │   ├── stdio.h string.h stdlib.h unistd.h …
 │   └── sys/mman.h
-├── Makefile                → libc.a + libc.so
-└── LICENSE                 GPLv3
+├── Makefile
+└── LICENSE          GPLv3
 ```
 
 ---
 
-## 📖 API Reference
+## 📖 API reference
 
-### stdio.h
+### `stdio.h`
 
-| Function | Signature |
-|----------|-----------|
-| `printf` | `(const char *fmt, ...) → int` |
-| `puts` | `(const char *str) → int` |
-| `putchar` | `(int c) → int` |
-| `kprint` | `(const char *s)` — debug print via `SYS_PRINT` |
-| `rename` | `(const char *old, const char *new) → int` |
+| Function | Role |
+|----------|------|
+| `printf` | Tiny `printf` — see format limits below |
+| `puts` / `putchar` | Line / character output to fd 1 |
+| `kprint` | Writes to the kernel debug channel via **`SYS_PRINT`** |
+| `rename` | `rename(2)` wrapper |
 
-> ⚠️ `printf` — только `%d` `%s` `%x` `%c` `%%`. Ширина/точность не реализованы.
+> ⚠️ **`printf`** supports only **`%d` `%s` `%x` `%c` `%%`**. Width, precision, and floating-point formats are **not** implemented.
 
-### stdlib.h
+### `stdlib.h`
 
-| Function | Signature |
-|----------|-----------|
-| `malloc` | `(size_t size) → void*` |
-| `free` | `(void *ptr)` |
-| `calloc` | `(size_t n, size_t size) → void*` |
-| `realloc` | `(void *ptr, size_t size) → void*` |
-| `exit` | `(int status)` |
-| `atoi` | `(const char *str) → int` |
-| `itoa` | `(int n, char *buf)` |
-| `hex_to_ascii` | `(unsigned int n, char *buf)` |
+| Function | Role |
+|----------|------|
+| `malloc` / `free` / `calloc` / `realloc` | See **malloc internals** below |
+| `exit` | `_exit` via syscall |
+| `atoi` | naive decimal parser |
+| `itoa` / `hex_to_ascii` | small integer → ASCII helpers |
 
-### string.h
+### `string.h`
 
-`memset` · `memcpy` · `memcmp` · `strlen` · `strcmp` · `strncmp` · `strcpy` · `strncpy` · `strcat` · `buf_append` · `buf_append_int`
+`memset` · `memcpy` · `memcmp` · `strlen` · `strcmp` · `strncmp` · `strcpy` · `strncpy` · `strcat` · `buf_append` · `buf_append_int` …
 
-### unistd.h
+### `unistd.h`
 
-`read` · `write` · `open` · `close` · `fork` · `execve` · `getpid` · `getppid` · `lseek` · `waitpid` · `pipe` · `dup` · `dup2` · `select` · `poll` · `getcwd` · `chdir` · `mkdir` · `rmdir` · `ioctl` · `sleep` · `brk` · **`module_load`** · **`module_unload`** (`SYS_MODULE_LOAD` **92** / `SYS_MODULE_UNLOAD` **93**)
+Core POSIX-like wrappers: `read`, `write`, `open`, `close`, `fork`, `execve`, `getpid`, `getppid`, `waitpid`, `lseek`, `pipe`, `dup`, `dup2`, `select`, `poll`, `getcwd`, `chdir`, `mkdir`, `rmdir`, `ioctl`, `sleep`, `brk`, **`mount`/`umount`**, **`module_load` / `module_unload`** (**`SYS_MODULE_LOAD` 92**, **`SYS_MODULE_UNLOAD` 93**), and many more — always cross-check the `.c` file against [`syscall.h`](include/syscall.h).
 
-### socket.h
+### `socket.h`
 
-`socket` · `bind` · `connect` · `listen` · `accept` · `send` · `recv` · `sendto` · `recvfrom` · `shutdown` · `setsockopt` · `getsockopt` · **`dns_resolve`** → **`SYS_DNS_RESOLVE` (94)**
+Full BSD-style set: `socket`, `bind`, `connect`, `listen`, `accept`, `send`, `recv`, `sendto`, `recvfrom`, `shutdown`, `setsockopt`, `getsockopt`.
 
-### signal.h
+Additionally **`dns_resolve(const char *name, uint32_t *out_ip_host)`** wraps **`SYS_DNS_RESOLVE` (94)** — resolves a **dotted IPv4 literal** or performs a **blocking DNS A query** (requires the kernel to have a DNS server address from DHCP or `netcfg_set`). Return **`0`** on success, **`-1`** on error.
 
-`signal` · `kill` · `sigprocmask` · `sigpending` · `sigsuspend` · `alarm` · `setitimer`
+### `signal.h`
 
-### Other
+`signal`, `kill`, `sigaction`, `sigprocmask`, `sigpending`, `sigsuspend`, `alarm`, `setitimer`.
 
-- **`sys/mman.h`** — `mmap`, `munmap`, `mprotect`
-- **`shm.h`** — `shmget`, `shmat`, `shmdt`, `shmctl`
-- **`time.h`** — `gettimeofday`, `clock_gettime`, `nanosleep`
-- **`termios.h`** — `tcgetattr`, `tcsetattr`
-- **`fcntl.h`** — `open`, `fcntl`, `symlink`, `readlink`, `link`, `unlink`
+### Other headers
 
-> 💡 Прямых тонких обёрток под **`SYS_PING_ECHO` (90)** и **`SYS_NETCFG_SET` (91)** может не быть — при необходимости: `syscall(SYS_PING_ECHO, …)` из **`syscall.h`**.
+| Header | Highlights |
+|--------|------------|
+| **`sys/mman.h`** | `mmap`, `munmap`, `mprotect` |
+| **`shm.h`** | `shmget`, `shmat`, `shmdt`, `shmctl` |
+| **`time.h`** | `gettimeofday`, `clock_gettime`, `nanosleep` |
+| **`termios.h`** | `tcgetattr`, `tcsetattr` |
+| **`fcntl.h`** / **`poll.h`** / **`select.h`** | open flags, non-blocking pollable fds |
+
+> 💡 Thin libc wrappers for **`SYS_PING_ECHO` (90)** and **`SYS_NETCFG_SET` (91)** may be missing — call **`syscall()`** from [`syscall.c`](src/syscall.c) / inline helpers with the right argument packing as the kernel expects.
 
 ---
 
-## 🧠 malloc internals
+## 🧠 `malloc` internals
 
-Реализован через **`brk`**. Линейный список блоков:
+The heap is a **singly linked list** of blocks carved out of the **`brk`** region returned by the kernel.
 
 ```
 ┌──────────────────┬───────────────────────┬──────────────┐
-│  block_header    │  user data            │  remainder   │
-│  16 bytes        │  ALIGN8(size)         │  if > 16B    │
+│  block_header    │  user payload        │  slack       │
+│  16 bytes        │  8-byte aligned      │  optional    │
 └──────────────────┴───────────────────────┴──────────────┘
 ```
 
 ```c
 struct block_header {
-    uint32_t magic;              // 0xA110CA7E — integrity check
-    uint32_t size;               // usable bytes (excl. header)
-    uint32_t is_free;            // 1 = available for reuse
+    uint32_t magic;              /* 0xA110CA7E — canary */
+    uint32_t size;             /* usable bytes excluding header */
+    uint32_t is_free;          /* 1 = on free list */
     struct block_header *next;
 };
 ```
 
-- **First-fit** по `free_list`
-- **Коалесценция** соседних свободных блоков при `free()`
-- Минимальный рост к ядру: `max(header + size, 4096)` байт
+- **First-fit** scan across `free_list`.
+- **Coalescing** of adjacent free blocks on `free()`.
+- **`sbrk`** requests are rounded up to at least **`max(header + size, 4096)`** bytes to reduce syscall chatter.
 
 ---
 
-## ⚙️ ABI / int 0x80
+## ⚙️ ABI — `int 0x80`
+
+**Register convention (3-scalar syscalls):**
 
 ```
-EAX = syscall number
-EBX = arg1
-ECX = arg2
-EDX = arg3
-→ return in EAX
+EAX = syscall number (SYS_*)
+EBX = 1st argument
+ECX = 2nd argument
+EDX = 3rd argument
+EAX ← return value (signed int semantics)
 ```
 
 ```c
@@ -199,22 +205,24 @@ static inline int __syscall3(int num, int a1, int a2, int a3) {
 }
 ```
 
-**Примеры номеров** (полная таблица — только в [`include/syscall.h`](include/syscall.h)):
+Many syscalls pass a **pointer to a struct** in **EBX** (and sometimes use **`__syscall1`**). The kernel distinguishes those with `_needs_frame()` — see CactKernel **`syscall_handler`** in `mod.c`.
 
-| # | Name | Notes |
-|---|------|-------|
-| 0 | `SYS_PRINT` | kernel debug print |
+**Sample numbers** (full table only in [`include/syscall.h`](include/syscall.h)):
+
+| # | Constant | Typical use |
+|---|----------|-------------|
+| 0 | `SYS_PRINT` | Debug string to kernel console |
 | 3 | `SYS_FORK` | |
-| 5 | `SYS_EXIT` | status |
-| 22 | `SYS_READ` | fd, buf, count |
-| 23 | `SYS_WRITE` | fd, buf, count |
+| 5 | `SYS_EXIT` | |
+| 22 | `SYS_READ` | |
+| 23 | `SYS_WRITE` | |
 | 61 | `SYS_BRK` | |
-| 62 | `SYS_MMAP` | кадр в ядре |
+| 62 | `SYS_MMAP` | Uses full register frame in kernel |
 | 65 | `SYS_SHMGET` | |
 | 78 | `SYS_SOCKET` | |
-| 90 | `SYS_PING_ECHO` | ICMP echo helper |
-| 91 | `SYS_NETCFG_SET` | IPv4 / DHCP metadata |
-| 92 | `SYS_MODULE_LOAD` | path, vendor, device |
+| 90 | `SYS_PING_ECHO` | ICMP echo helper (kernel / Rust path) |
+| 91 | `SYS_NETCFG_SET` | Push IPv4 / DHCP metadata into Rust stack |
+| 92 | `SYS_MODULE_LOAD` | |
 | 93 | `SYS_MODULE_UNLOAD` | |
 | 94 | `SYS_DNS_RESOLVE` | `dns_resolve()` |
 
