@@ -114,4 +114,7 @@ int setsockopt(int fd, int level, int optname,
 int getsockopt(int fd, int level, int optname,
                void *optval, uint32_t *optlen);
 
+/* Hostname or dotted-decimal IPv4 → host byte order IPv4 (blocking; needs DNS server from DHCP/netcfg). */
+int dns_resolve(const char *name, uint32_t *out_ip_host);
+
 #endif /* _SOCKET_H */

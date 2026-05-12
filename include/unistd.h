@@ -67,11 +67,14 @@ int     chroot(const char *path);
 int     mkdir(const char *pathname, mode_t mode);
 int     rmdir(const char *pathname);
 int     unlink(const char *pathname);
+int     cact_create(const char *pathname);
+int     cact_delete(const char *pathname);
 int     access(const char *pathname, int mode);
 int     truncate(const char *path, off_t length);
 int     ftruncate(int fd, off_t length);
 int     sync(void);
 int     fsync(int fd);
+mode_t  umask(mode_t mask);
 int     mknod(const char *pathname, mode_t mode, dev_t dev);
 int     symlink(const char *target, const char *linkpath);
 ssize_t readlink(const char *path, char *buf, size_t bufsiz);
@@ -82,6 +85,13 @@ int     mount(const char *src, const char *target, const char *fstype,
               unsigned long flags, const void *data);
 int     umount(const char *target);
 int     reboot(int cmd);
+
+/* ── загрузка PCI-модулей ядра (только euid 0) ── */
+/* vendor_id & device_id both (unsigned)-1: kernel reads cact_pci_* from the module ELF */
+#define MODULE_LOAD_ID_AUTO  ((unsigned)0xFFFFFFFFu)
+int     module_load(const char *path, unsigned vendor_id, unsigned device_id);
+/* NULL: unload usermod slot; "NAME": driver name; decimal string: [pci N] index (see /dev/modinfo) */
+int     module_unload(const char *target);
 
 /* ── uname ── */
 struct utsname {

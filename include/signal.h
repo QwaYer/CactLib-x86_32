@@ -56,9 +56,20 @@ typedef void (*sighandler_t)(int);
 
 #define SIG_DFL ((sighandler_t)0)
 #define SIG_IGN ((sighandler_t)1)
+#define SIG_ERR ((sighandler_t)(uintptr_t)-1)
 
 #define WNOHANG 1
 
+/* Индекс в таблице обработчиков ядра (тот же номер бита маски для доставленных сигналов). */
+#define KERNEL_NSIG 13
+
+/* Ядро принимает только (signum, handler); oldact игнорируется. */
+struct sigaction {
+    sighandler_t sa_handler;
+};
+
+int          sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
+int          sigreturn(void);
 int          sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 int          sigpending(sigset_t *set);
 int          sigsuspend(const sigset_t *mask);

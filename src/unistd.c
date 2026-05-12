@@ -157,6 +157,18 @@ int unlink(const char *pathname) {
     return (int)__syscall1(SYS_UNLINK, (uintptr_t)pathname);
 }
 
+int cact_create(const char *pathname) {
+    return (int)__syscall1(SYS_CREATE, (uintptr_t)pathname);
+}
+
+int cact_delete(const char *pathname) {
+    return (int)__syscall1(SYS_DELETE, (uintptr_t)pathname);
+}
+
+mode_t umask(mode_t mask) {
+    return (mode_t)(unsigned)__syscall1(SYS_UMASK, (uintptr_t)mask);
+}
+
 int access(const char *pathname, int mode) {
     return (int)__syscall2(SYS_ACCESS, (uintptr_t)pathname, (uintptr_t)mode);
 }
@@ -207,6 +219,15 @@ int umount(const char *target) {
 
 int reboot(int cmd) {
     return (int)__syscall1(SYS_REBOOT, (uintptr_t)cmd);
+}
+
+int module_load(const char *path, unsigned vendor_id, unsigned device_id) {
+    return (int)syscall(SYS_MODULE_LOAD, (uintptr_t)path,
+                        (uintptr_t)vendor_id, (uintptr_t)device_id);
+}
+
+int module_unload(const char *target) {
+    return (int)syscall(SYS_MODULE_UNLOAD, (uintptr_t)target, 0, 0);
 }
 
 int uname(struct utsname *buf) {

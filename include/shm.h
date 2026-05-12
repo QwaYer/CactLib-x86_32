@@ -7,11 +7,12 @@
 #define IPC_EXCL     0x0400
 #define IPC_PRIVATE  0
 
-#define IPC_STAT     1
-#define IPC_SET      2
-#define IPC_RMID     3
+/* Must match kernel SYSV-ish values in Cact rust_mm (shm_ctl). */
+#define IPC_RMID     0
+#define IPC_STAT     2
 
 #define SHM_RDONLY   0x1000
+#define SHM_RND      0x2000
 
 int      shmget(int key, unsigned int size, int flags);
 void*    shmat(int shmid, const void* shmaddr, int flags);

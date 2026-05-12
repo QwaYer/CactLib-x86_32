@@ -1,16 +1,18 @@
 # 🌵 CactLib/x86_32
 
 <p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-green.svg?style=for-the-badge" alt="Version: 1.0.0">
   <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=for-the-badge" alt="License: GPLv3">
   <img src="https://img.shields.io/badge/arch-i686-red.svg?style=for-the-badge" alt="Arch: i686">
   <img src="https://img.shields.io/badge/language-C%2FASM-orange.svg?style=for-the-badge" alt="Language: C/ASM">
-  <img src="https://img.shields.io/badge/output-libc.a-green.svg?style=for-the-badge" alt="Output: libc.a">
+  <img src="https://img.shields.io/badge/output-libc.a%20%2B%20libc.so-green.svg?style=for-the-badge" alt="libc.a + libc.so">
   <img src="https://img.shields.io/badge/syscall-int%200x80-purple.svg?style=for-the-badge" alt="int 0x80">
   <img src="https://img.shields.io/badge/status-pre--1.0-yellow.svg?style=for-the-badge" alt="pre-1.0">
 </p>
 
 <p align="center">
-  C standard library for <a href="https://github.com/QwaYer/CactOS-x86_32">CactOS</a> userspace — freestanding, no host libc, pure <code>int 0x80</code> syscall interface.
+  C standard library for <a href="https://github.com/QwaYer/CactOS-x86_32"><strong>CactOS</strong></a> userspace — freestanding, no host libc, pure <code>int 0x80</code> syscall interface.<br>
+  Пары с ядром: <a href="https://github.com/QwaYer/CactKernel-x86_32"><strong>CactKernel-x86_32</strong></a> · номера <code>SYS_*</code> в <a href="include/syscall.h"><code>include/syscall.h</code></a>.
 </p>
 
 ---
@@ -19,28 +21,25 @@
 
 | | |
 |---|---|
-| **Source files** | 14 `.c` / `.S` |
-| **Headers** | 17 |
-| **Syscall IDs** | 65 |
-| **Host dependencies** | 0 |
-| **Output** | `libc.a` (static archive) |
+| **Исходники** | 15 `src/*.c` + `start.S` |
+| **Заголовки** | 18 файлов в `include/` (в т.ч. `sys/mman.h`) |
+| **Syscall IDs** | **95** (`SYS_SYSCALL_COUNT` — зеркало ядра) |
+| **Host dependencies** | 0 (только toolchain) |
+| **Output** | **`libc.a`** · **`libc.so`** · PIC-`start.o` |
 
-CactLib — минималистичная реализация стандартной библиотеки C для пользовательского пространства ядра CactOS. Компилируется в статический архив `libc.a`, линкуется с любым userspace ELF-бинарником. Нет зависимостей от host libc — всё через `int 0x80`.
-
-> Часть CactOS ecosystem: **CactKernel** (ядро) · **CactLib** (libc) · **Cactsole** (консоль) · **Optics** (графический сервер)
+> Часть экосистемы: **CactKernel** (ядро) · **CactLib** (libc) · **Cactsole** · **Cgoct** · **LocalRepoCactOS** (`cctkfs.img`)
 
 ---
 
 ## 🔨 Building
 
-**Requirements:** `gcc ≥ 9.0` with `-m32` support, `binutils`, `make`
+**Requirements:** `gcc` с `-m32` (`gcc-multilib` на amd64), `binutils`, `make`
 
 ```sh
-# Clone
 git clone https://github.com/QwaYer/CactLib-x86_32
 cd CactLib-x86_32
 
-# Build → libc.a
+# Build → libc.a + libc.so + build/pic/start.o
 make
 
 # Clean
@@ -48,16 +47,19 @@ make clean
 ```
 
 **Compiler flags:**
+
 ```makefile
-CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -Iinclude -Wall -Wextra
+CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
+         -Iinclude -Wall -Wextra
 ```
 
-**Linking your binary:**
+**Статическая линковка:**
+
 ```sh
 gcc -m32 -nostdlib -ffreestanding -o myprogram myprogram.o libc.a
 ```
 
-> ⚠️ Собирается **только под i686**. На x86_64 хосте может потребоваться `gcc-multilib`.
+> ⚠️ Собирается **только под i686**. На x86_64 без `gcc-multilib` сборка не взлетит.
 
 ---
 
@@ -71,6 +73,7 @@ CactLib-x86_32/
 │   ├── string.c            memset, memcpy, strlen, strcmp, itoa…
 │   ├── unistd.c            read, write, fork, exec, pipe, select…
 │   ├── socket.c            socket, bind, connect, send, recv…
+│   ├── dns.c               dns_resolve → SYS_DNS_RESOLVE
 │   ├── signal.c            signal, kill, sigprocmask, alarm…
 │   ├── stat.c              stat, fstat
 │   ├── dirent.c            getdents
@@ -79,14 +82,14 @@ CactLib-x86_32/
 │   ├── shm.c               shmget, shmat, shmdt, shmctl
 │   ├── termios.c           tcgetattr, tcsetattr
 │   ├── time.c              gettimeofday, clock_gettime, nanosleep
-│   └── syscall.c           raw syscall() trampoline
-├── include/                ← public headers
-│   ├── stdio.h  string.h  stdlib.h  unistd.h
-│   ├── socket.h signal.h  stat.h    dirent.h
-│   ├── fcntl.h  poll.h    select.h  termios.h
-│   ├── time.h   shm.h     start.h   syscall.h
+│   ├── syscall.c           raw syscall() trampoline
+│   └── start.S             _start (обычный + PIC)
+├── include/
+│   ├── syscall.h           все SYS_* (должны совпадать с ядром!)
+│   ├── socket.h          сокеты + dns_resolve
+│   ├── stdio.h string.h stdlib.h unistd.h …
 │   └── sys/mman.h
-├── Makefile                → libc.a
+├── Makefile                → libc.a + libc.so
 └── LICENSE                 GPLv3
 ```
 
@@ -95,17 +98,19 @@ CactLib-x86_32/
 ## 📖 API Reference
 
 ### stdio.h
+
 | Function | Signature |
 |----------|-----------|
 | `printf` | `(const char *fmt, ...) → int` |
 | `puts` | `(const char *str) → int` |
 | `putchar` | `(int c) → int` |
-| `kprint` | `(const char *s)` — kernel debug print via `SYS_PRINT` |
+| `kprint` | `(const char *s)` — debug print via `SYS_PRINT` |
 | `rename` | `(const char *old, const char *new) → int` |
 
-> ⚠️ `printf` поддерживает только `%d` `%s` `%x` `%c` `%%`. Флаги ширины/точности не реализованы.
+> ⚠️ `printf` — только `%d` `%s` `%x` `%c` `%%`. Ширина/точность не реализованы.
 
 ### stdlib.h
+
 | Function | Signature |
 |----------|-----------|
 | `malloc` | `(size_t size) → void*` |
@@ -118,29 +123,36 @@ CactLib-x86_32/
 | `hex_to_ascii` | `(unsigned int n, char *buf)` |
 
 ### string.h
+
 `memset` · `memcpy` · `memcmp` · `strlen` · `strcmp` · `strncmp` · `strcpy` · `strncpy` · `strcat` · `buf_append` · `buf_append_int`
 
 ### unistd.h
-`read` · `write` · `open` · `close` · `fork` · `execve` · `getpid` · `getppid` · `lseek` · `waitpid` · `pipe` · `dup2` · `select` · `poll` · `getcwd` · `chdir` · `mkdir` · `rmdir` · `ioctl` · `sleep` · `usleep` · `sbrk` · `brk`
+
+`read` · `write` · `open` · `close` · `fork` · `execve` · `getpid` · `getppid` · `lseek` · `waitpid` · `pipe` · `dup` · `dup2` · `select` · `poll` · `getcwd` · `chdir` · `mkdir` · `rmdir` · `ioctl` · `sleep` · `brk` · **`module_load`** · **`module_unload`** (`SYS_MODULE_LOAD` **92** / `SYS_MODULE_UNLOAD` **93**)
 
 ### socket.h
-`socket` · `bind` · `connect` · `listen` · `accept` · `send` · `recv` · `sendto` · `recvfrom` · `shutdown` · `setsockopt` · `getsockopt`
+
+`socket` · `bind` · `connect` · `listen` · `accept` · `send` · `recv` · `sendto` · `recvfrom` · `shutdown` · `setsockopt` · `getsockopt` · **`dns_resolve`** → **`SYS_DNS_RESOLVE` (94)**
 
 ### signal.h
+
 `signal` · `kill` · `sigprocmask` · `sigpending` · `sigsuspend` · `alarm` · `setitimer`
 
 ### Other
+
 - **`sys/mman.h`** — `mmap`, `munmap`, `mprotect`
 - **`shm.h`** — `shmget`, `shmat`, `shmdt`, `shmctl`
 - **`time.h`** — `gettimeofday`, `clock_gettime`, `nanosleep`
 - **`termios.h`** — `tcgetattr`, `tcsetattr`
 - **`fcntl.h`** — `open`, `fcntl`, `symlink`, `readlink`, `link`, `unlink`
 
+> 💡 Прямых тонких обёрток под **`SYS_PING_ECHO` (90)** и **`SYS_NETCFG_SET` (91)** может не быть — при необходимости: `syscall(SYS_PING_ECHO, …)` из **`syscall.h`**.
+
 ---
 
 ## 🧠 malloc internals
 
-Реализован через `brk` syscall. Линейный список блоков:
+Реализован через **`brk`**. Линейный список блоков:
 
 ```
 ┌──────────────────┬───────────────────────┬──────────────┐
@@ -158,9 +170,9 @@ struct block_header {
 };
 ```
 
-- **First-fit** поиск по `free_list`
+- **First-fit** по `free_list`
 - **Коалесценция** соседних свободных блоков при `free()`
-- Минимальный запрос к ядру: `max(header + size, 4096)` байт
+- Минимальный рост к ядру: `max(header + size, 4096)` байт
 
 ---
 
@@ -175,7 +187,6 @@ EDX = arg3
 ```
 
 ```c
-// Inline asm wrapper (from syscall.h)
 static inline int __syscall3(int num, int a1, int a2, int a3) {
     int ret;
     __asm__ volatile (
@@ -188,27 +199,35 @@ static inline int __syscall3(int num, int a1, int a2, int a3) {
 }
 ```
 
-**Syscall table (partial):**
+**Примеры номеров** (полная таблица — только в [`include/syscall.h`](include/syscall.h)):
 
 | # | Name | Notes |
 |---|------|-------|
 | 0 | `SYS_PRINT` | kernel debug print |
-| 3 | `SYS_READ` | fd, buf, count |
-| 4 | `SYS_WRITE` | fd, buf, count |
-| 7 | `SYS_EXIT` | status |
-| 9 | `SYS_FORK` | COW via kernel |
-| 10 | `SYS_EXEC` | path, argv, envp |
-| 13 | `SYS_MMAP` | addr, len, prot, flags, fd, off |
-| 23 | `SYS_BRK` | addr → new brk |
-| 43 | `SYS_SOCKET` | domain, type, protocol |
-| 61 | `SYS_SHMGET` | key, size, flags |
+| 3 | `SYS_FORK` | |
+| 5 | `SYS_EXIT` | status |
+| 22 | `SYS_READ` | fd, buf, count |
+| 23 | `SYS_WRITE` | fd, buf, count |
+| 61 | `SYS_BRK` | |
+| 62 | `SYS_MMAP` | кадр в ядре |
+| 65 | `SYS_SHMGET` | |
+| 78 | `SYS_SOCKET` | |
+| 90 | `SYS_PING_ECHO` | ICMP echo helper |
+| 91 | `SYS_NETCFG_SET` | IPv4 / DHCP metadata |
+| 92 | `SYS_MODULE_LOAD` | path, vendor, device |
+| 93 | `SYS_MODULE_UNLOAD` | |
+| 94 | `SYS_DNS_RESOLVE` | `dns_resolve()` |
 
 ---
 
 ## ⚖️ License
 
-**GNU General Public License v3.0** — see [`LICENSE`](LICENSE)
+**GNU General Public License v3.0** — see [`LICENSE`](LICENSE).
 
 ---
 
-**Developer:** [QwaYer](https://github.com/QwaYer) · **Kernel:** [CactKernel-x86_32](https://github.com/QwaYer/CactKernel-x86_32) · **OS:** [CactOS-x86_32](https://github.com/QwaYer/CactOS-x86_32)
+<p align="center">
+  <strong>Developer:</strong> <a href="https://github.com/QwaYer">QwaYer</a>
+  &nbsp;·&nbsp; <strong>Kernel:</strong> <a href="https://github.com/QwaYer/CactKernel-x86_32">CactKernel-x86_32</a>
+  &nbsp;·&nbsp; <strong>OS:</strong> <a href="https://github.com/QwaYer/CactOS-x86_32">CactOS-x86_32</a>
+</p>

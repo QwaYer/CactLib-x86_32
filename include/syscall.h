@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+/*
+ * Номера и порядок должны совпадать с:
+ *   CactKernel-x86_32/Cact/kernel/core/syscalls/syscalls.h
+ * (syscall_num_t / SYSCALL_COUNT). При добавлении syscall в ядре — править здесь
+ * и пересобрать libc.a, затем перелинковать cactsole, CactUserBins-x86_32 и прочие ELF.
+ */
+
 /* 0 — отладка */
 #define SYS_PRINT           0
 
@@ -118,6 +125,14 @@
 #define SYS_SHUTDOWN        87
 #define SYS_SETSOCKOPT      88
 #define SYS_GETSOCKOPT      89
+#define SYS_PING_ECHO       90
+#define SYS_NETCFG_SET      91
+#define SYS_MODULE_LOAD     92
+#define SYS_MODULE_UNLOAD   93
+#define SYS_DNS_RESOLVE     94
+
+/* Номера 0 … SYSCALL_COUNT-1 */
+#define SYS_SYSCALL_COUNT   95
 
 #define STDIN_FILENO  0
 #define STDOUT_FILENO 1
