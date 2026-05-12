@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/license-GPLv3-blue.svg?style=for-the-badge" alt="License: GPLv3">
   <img src="https://img.shields.io/badge/arch-i686-red.svg?style=for-the-badge" alt="Arch: i686">
   <img src="https://img.shields.io/badge/language-C%2FASM-orange.svg?style=for-the-badge" alt="Language: C/ASM">
-  <img src="https://img.shields.io/badge/output-libc.a%20%2B%20libc.so-green.svg?style=for-the-badge" alt="libc.a + libc.so">
+  <img src="https://img.shields.io/badge/output-libc.a%20%2B%20libc.so-green.svg?style=for-the-badge" alt="=libc.so">
   <img src="https://img.shields.io/badge/syscall-int%200x80-purple.svg?style=for-the-badge" alt="int 0x80">
   <img src="https://img.shields.io/badge/status-pre--1.0-yellow.svg?style=for-the-badge" alt="pre-1.0">
 </p>
