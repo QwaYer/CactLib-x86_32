@@ -33,11 +33,17 @@ CactLib is the **contract surface** between user ELF binaries and the kernel. If
 2. Rebuild **`libc.a`** / **`libc.so`** (`make`).
 3. **Re-link every user program** (init, shell, demos, drivers’ staged ELFs) against the new archive / shared object.
 
-**Ecosystem:** **CactKernel** · **CactLib** · **Cactsole** · **Cgoct** · **LocalRepoCactOS** (`cctkfs.img` packer).
+**Ecosystem:** **[CactOS-x86_32](https://github.com/QwaYer/CactOS-x86_32)** (integrator) · **CactKernel** · **CactLib** · **Cactsole** · **Cgoct** · **LocalRepoCactOS** (`cctkfs.img` packer).
 
 ---
 
 ## 🔨 Building
+
+**Recommended — full workspace**
+
+Clone **[CactOS-x86_32](https://github.com/QwaYer/CactOS-x86_32)** next to this tree and run **`make`** or **`make -C CactOS-x86_32 iso`** from their **common parent** — **CactOS** invokes **`make`** here as part of the full userland + ISO pipeline.
+
+**Standalone — this repository**
 
 **Requirements:** `gcc` with **`-m32`**, GNU **`binutils`**, **`make`**. On amd64 Debian/Ubuntu install **`gcc-multilib`** or an equivalent multilib toolchain.
 
