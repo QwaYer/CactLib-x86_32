@@ -156,3 +156,134 @@ void *realloc(void *ptr, size_t size) {
     free(ptr);
     return new_ptr;
 }
+
+double strtod(const char *str, char **endptr) {
+    double result = 0.0;
+    int sign = 1, i = 0;
+    while (str[i] == ' ') i++;
+    if (str[i] == '-') { sign = -1; i++; }
+    else if (str[i] == '+') i++;
+    while (str[i] >= '0' && str[i] <= '9') {
+        result = result * 10.0 + (str[i] - '0');
+        i++;
+    }
+    if (str[i] == '.') {
+        i++;
+        double frac = 1.0;
+        while (str[i] >= '0' && str[i] <= '9') {
+            frac /= 10.0;
+            result += frac * (str[i] - '0');
+            i++;
+        }
+    }
+    if (endptr) *endptr = (char*)(str + i);
+    return sign * result;
+}
+
+double atof(const char *str) {
+    return strtod(str, 0);
+}
+
+unsigned long strtoul(const char *str, char **endptr, int base) {
+    unsigned long result = 0;
+    int i = 0;
+    while (str[i] == ' ') i++;
+    if (base == 0) {
+        if (str[i] == '0') {
+            if (str[i+1] == 'x' || str[i+1] == 'X') { base = 16; i += 2; }
+            else base = 8;
+        } else {
+            base = 10;
+        }
+    }
+    if (base == 16 && str[i] == '0' && (str[i+1] == 'x' || str[i+1] == 'X')) i += 2;
+    while (str[i]) {
+        int d;
+        if (str[i] >= '0' && str[i] <= '9') d = str[i] - '0';
+        else if (str[i] >= 'a' && str[i] <= 'f') d = str[i] - 'a' + 10;
+        else if (str[i] >= 'A' && str[i] <= 'F') d = str[i] - 'A' + 10;
+        else break;
+        if (d >= base) break;
+        result = result * base + d;
+        i++;
+    }
+    if (endptr) *endptr = (char*)(str + i);
+    return result;
+}
+
+static void _qsort_swap(void *a, void *b, size_t size) {
+    unsigned char tmp[64];
+    unsigned char *pa = (unsigned char*)a, *pb = (unsigned char*)b;
+    for (size_t i = 0; i < size; i += sizeof(tmp)) {
+        size_t chunk = size - i;
+        if (chunk > sizeof(tmp)) chunk = sizeof(tmp);
+        for (size_t j = 0; j < chunk; j++) tmp[j] = pa[i+j];
+        for (size_t j = 0; j < chunk; j++) pa[i+j] = pb[i+j];
+        for (size_t j = 0; j < chunk; j++) pb[i+j] = tmp[j];
+    }
+}
+
+void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+    if (nmemb <= 1) return;
+    char *arr = (char*)base;
+    size_t last = nmemb - 1;
+    size_t pivot = 0;
+    for (size_t i = 0; i < last; i++) {
+        if (compar(arr + i * size, arr + last * size) < 0) {
+            _qsort_swap(arr + i * size, arr + pivot * size, size);
+            pivot++;
+        }
+    }
+    _qsort_swap(arr + pivot * size, arr + last * size, size);
+    if (pivot > 1) qsort(arr, pivot, size, compar);
+    if (pivot < nmemb - 1) qsort(arr + (pivot + 1) * size, nmemb - pivot - 1, size, compar);
+}
+
+long strtol(const char *str, char **endptr, int base) {
+    int i = 0, sign = 1;
+    while (str[i] == ' ') i++;
+    if (str[i] == '-') { sign = -1; i++; }
+    else if (str[i] == '+') i++;
+    return (long)strtoul(str + i, endptr, base) * sign;
+}
+char *realpath(const char *path, char *resolved_path) {
+    (void)path;
+    if (resolved_path) resolved_path[0] = '\0';
+    return 0;
+}
+
+char *getenv(const char *name) {
+    (void)name;
+    return 0;
+}
+
+unsigned long long strtoull(const char *str, char **endptr, int base) {
+    unsigned long long result = 0;
+    int i = 0;
+    while (str[i] == ' ') i++;
+    if (base == 16 && str[i] == '0' && (str[i+1] == 'x' || str[i+1] == 'X')) i += 2;
+    while (str[i]) {
+        int d;
+        if (str[i] >= '0' && str[i] <= '9') d = str[i] - '0';
+        else if (str[i] >= 'a' && str[i] <= 'f') d = str[i] - 'a' + 10;
+        else if (str[i] >= 'A' && str[i] <= 'F') d = str[i] - 'A' + 10;
+        else break;
+        if (d >= base) break;
+        result = result * base + d;
+        i++;
+    }
+    if (endptr) *endptr = (char*)(str + i);
+    return result;
+}
+
+long long strtoll(const char *str, char **endptr, int base) {
+    int i = 0, sign = 1;
+    while (str[i] == ' ') i++;
+    if (str[i] == '-') { sign = -1; i++; }
+    else if (str[i] == '+') i++;
+    return (long long)strtoull(str + i, endptr, base) * sign;
+}
+
+long double strtold(const char *str, char **endptr) {
+    return (long double)strtod(str, endptr);
+}

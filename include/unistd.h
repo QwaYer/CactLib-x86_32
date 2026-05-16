@@ -88,6 +88,8 @@ int     reboot(int cmd);
 
 /* ── загрузка PCI-модулей ядра (только euid 0) ── */
 /* vendor_id & device_id both (unsigned)-1: kernel reads cact_pci_* from the module ELF */
+extern char **environ;
+
 #define MODULE_LOAD_ID_AUTO  ((unsigned)0xFFFFFFFFu)
 int     module_load(const char *path, unsigned vendor_id, unsigned device_id);
 /* NULL: unload usermod slot; "NAME": driver name; decimal string: [pci N] index (see /dev/modinfo) */
@@ -110,5 +112,7 @@ gid_t   getgid(void);
 gid_t   getegid(void);
 int     setuid(uid_t uid);
 int     setgid(gid_t gid);
+
+int     execvp(const char *file, char *const argv[]);
 
 #endif

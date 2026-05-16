@@ -121,7 +121,7 @@ int memcmp(const void* s1, const void* s2, unsigned int n) {
     return 0;
 }
 
-int strncmp(const char* a, const char* b) {
+int strncmp(const char* a, const char* b, unsigned int n) {
     while (*a && *a == *b) { a++; b++; }
     return *a - *b;
 }
@@ -142,4 +142,78 @@ int buf_append_int(char* buf, int pos, int max, int n) {
     char tmp[32];
     itoa(n, tmp);
     return buf_append(buf, pos, max, tmp);
+}
+
+char* strchr(const char* s, int c) {
+    while (*s) {
+        if (*s == (char)c) return (char*)s;
+        s++;
+    }
+    return (c == '\0') ? (char*)s : 0;
+}
+
+char* strrchr(const char* s, int c) {
+    const char* last = 0;
+    while (*s) {
+        if (*s == (char)c) last = s;
+        s++;
+    }
+    if (c == '\0') return (char*)s;
+    return (char*)last;
+}
+
+size_t strspn(const char* s, const char* accept) {
+    size_t n = 0;
+    while (*s) {
+        const char* a = accept;
+        int found = 0;
+        while (*a) { if (*s == *a) { found = 1; break; } a++; }
+        if (!found) break;
+        n++; s++;
+    }
+    return n;
+}
+
+size_t strcspn(const char* s, const char* reject) {
+    size_t n = 0;
+    while (*s) {
+        const char* r = reject;
+        int found = 0;
+        while (*r) { if (*s == *r) { found = 1; break; } r++; }
+        if (found) break;
+        n++; s++;
+    }
+    return n;
+}
+
+char* strstr(const char* haystack, const char* needle) {
+    if (!*needle) return (char*)haystack;
+    while (*haystack) {
+        const char* h = haystack;
+        const char* n = needle;
+        while (*h && *n && *h == *n) { h++; n++; }
+        if (!*n) return (char*)haystack;
+        haystack++;
+    }
+    return 0;
+}
+
+char* strpbrk(const char* s, const char* accept) {
+    while (*s) {
+        const char* a = accept;
+        while (*a) { if (*s == *a) return (char*)s; a++; }
+        s++;
+    }
+    return 0;
+}
+
+void* memmove(void* dest, const void* src, unsigned int len) {
+    unsigned char* d = (unsigned char*)dest;
+    const unsigned char* s = (const unsigned char*)src;
+    if (d < s) {
+        for (unsigned int i = 0; i < len; i++) d[i] = s[i];
+    } else if (d > s) {
+        for (unsigned int i = len; i > 0; i--) d[i-1] = s[i-1];
+    }
+    return dest;
 }

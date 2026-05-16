@@ -259,3 +259,6 @@ int setuid(uid_t uid) {
 int setgid(gid_t gid) {
     return (int)__syscall1(SYS_SETGID, (uintptr_t)gid);
 }
+int execvp(const char *file, char *const argv[]) {
+    return execve(file, argv, environ);
+}

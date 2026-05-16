@@ -33,7 +33,6 @@ TARGET_SO = libc.so
 
 all: $(TARGET_A) $(TARGET_SO) $(START_O_PIC)
 
-# ── статический архив (как раньше) ────────────────────────────────────────
 $(TARGET_A): $(OBJS)
 	$(AR) rcs $@ $^
 
@@ -45,20 +44,20 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 	@mkdir -p $(BUILD_DIR)
 	$(AS) $(ASFLAGS) -c $< -o $@
 
-# ── shared object (ET_DYN, фиксированная база 0x10000000) ─────────────────
 $(PIC_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(PIC_DIR)
 	$(CC) $(CFLAGS_PIC) -c $< -o $@
 
-# start.S must be assembled as PIC so _GLOBAL_OFFSET_TABLE_ relocations resolve.
 $(PIC_DIR)/%.o: $(SRC_DIR)/%.S
 	@mkdir -p $(PIC_DIR)
 	$(CC) $(CFLAGS_PIC) -c $< -o $@
 
-$(TARGET_SO): $(C_PIC_OBJS) libc.ld
+ALL_PIC_OBJS = $(C_PIC_OBJS) $(filter-out $(START_O_PIC),$(patsubst $(SRC_DIR)/%.S,$(PIC_DIR)/%.o,$(S_SRCS)))
+
+$(TARGET_SO): $(ALL_PIC_OBJS) libc.ld
 	$(LD) -m elf_i386 -shared -nostdlib \
 	      --hash-style=both -soname=libc.so \
-	      -T libc.ld -o $@ $(C_PIC_OBJS)
+	      -T libc.ld -o $@ $(ALL_PIC_OBJS)
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET_A) $(TARGET_SO)

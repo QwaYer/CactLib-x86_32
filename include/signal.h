@@ -60,12 +60,43 @@ typedef void (*sighandler_t)(int);
 
 #define WNOHANG 1
 
+/* Additional POSIX signal numbers (kernel supports bits 0-12 only) */
+#ifndef SIGHUP
+#  define SIGHUP    10
+#endif
+#ifndef SIGINT
+#  define SIGINT    11
+#endif
+#ifndef SIGQUIT
+#  define SIGQUIT   12
+#endif
+#define SIGILL    13
+#define SIGABRT   14
+#define SIGBUS    15
+
+/* SA_SIGINFO: sigaction flag for sa_sigaction handler */
+#define SA_SIGINFO 0x0004
+
+/* FPE signal code constants */
+#define FPE_INTDIV 1
+#define FPE_FLTDIV 2
+
+typedef struct {
+    int si_signo;
+    int si_code;
+} siginfo_t;
+
+#define sigemptyset(set)    (*(set) = 0)
+#define sigaddset(set, n)   (*(set) |= (1u << (n)))
+
 /* Индекс в таблице обработчиков ядра (тот же номер бита маски для доставленных сигналов). */
 #define KERNEL_NSIG 13
 
-/* Ядро принимает только (signum, handler); oldact игнорируется. */
 struct sigaction {
     sighandler_t sa_handler;
+    sigset_t     sa_mask;
+    int          sa_flags;
+    void         (*sa_sigaction)(int, siginfo_t *, void *);
 };
 
 int          sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
