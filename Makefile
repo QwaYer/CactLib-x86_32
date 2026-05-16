@@ -4,7 +4,6 @@ AR = ar
 LD = ld
 VERSION := $(shell cat VERSION)
 
-# Общие флаги. -fPIC нужен и для .so, и для безопасной линковки в PIE-бинари.
 CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
          -Iinclude -Wall -Wextra -DCACTLIB_VERSION=\"$(VERSION)\"
 CFLAGS_PIC = -m32 -ffreestanding -fPIC -fno-stack-protector -nostdlib \
@@ -22,9 +21,6 @@ C_OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SRCS))
 S_OBJS = $(patsubst $(SRC_DIR)/%.S, $(BUILD_DIR)/%.o, $(S_SRCS))
 OBJS = $(C_OBJS) $(S_OBJS)
 
-# Для .so собираем все .c заново как PIC. start.S в .so не нужен — это crt0,
-# линкуется только в исполняемые бинари (но PIC-вариант start.o используется
-# при линковке PIE-бинарей против libc.so).
 C_PIC_OBJS = $(patsubst $(SRC_DIR)/%.c, $(PIC_DIR)/%.o, $(C_SRCS))
 START_O_PIC = $(PIC_DIR)/start.o
 
